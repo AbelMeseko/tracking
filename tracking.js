@@ -1,4 +1,4 @@
- // Configuration
+   // Configuration
         const SHEET_ID = '1UvzxLfth-MYeEa63k6VS1qpZfUXwKF_PholJ9YaDLO8';
         
         // Tab GIDs
@@ -23,10 +23,18 @@
             VEHICLE: {}     // { "BD78NGZN": { "2024-01-01": 145, ... }, ... }
         };
         
-        // Current date range
+        // Current date range (for dashboard)
         let currentDateRange = {
             startDate: null,
             endDate: null
+        };
+
+        // Filter state for MAIN tab
+        let mainFilters = {
+            driver: 'all',
+            truck: 'all',
+            startDate: '',
+            endDate: ''
         };
 
         // Safe element getter
@@ -211,6 +219,9 @@
                 const footerTimestamp = getElement('footerTimestamp');
                 if (footerTimestamp) footerTimestamp.textContent = new Date().toLocaleString();
                 
+                // Populate MAIN filter dropdowns
+                populateMainFilters();
+                
                 // Set default to last 7 days
                 setLast7Days();
                 
@@ -326,6 +337,113 @@
             console.log('Daily totals processed:', dailyTotals);
         }
 
+        function populateMainFilters() {
+            const mainData = allSheetData['MAIN'];
+            if (!mainData || !mainData.data) return;
+            
+            const headers = mainData.rawHeaders;
+            const driverIdx = findColumnIndex(headers, 'driver');
+            const truckIdx = findColumnIndex(headers, 'truck') !== -1 ? 
+                findColumnIndex(headers, 'truck') : findColumnIndex(headers, 'reg');
+            
+            if (driverIdx !== -1) {
+                const drivers = new Set();
+                mainData.data.forEach(row => {
+                    if (row[driverIdx] && row[driverIdx].trim() !== '') {
+                        drivers.add(row[driverIdx].trim());
+                    }
+                });
+                const driverSelect = getElement('driverFilter');
+                if (driverSelect) {
+                    const sortedDrivers = Array.from(drivers).sort();
+                    driverSelect.innerHTML = '<option value="all">All Drivers</option>' + 
+                        sortedDrivers.map(d => `<option value="${d}">${d}</option>`).join('');
+                }
+            }
+            
+            if (truckIdx !== -1) {
+                const trucks = new Set();
+                mainData.data.forEach(row => {
+                    if (row[truckIdx] && row[truckIdx].trim() !== '') {
+                        trucks.add(row[truckIdx].trim());
+                    }
+                });
+                const truckSelect = getElement('truckFilter');
+                if (truckSelect) {
+                    const sortedTrucks = Array.from(trucks).sort();
+                    truckSelect.innerHTML = '<option value="all">All Trucks</option>' + 
+                        sortedTrucks.map(t => `<option value="${t}">${t}</option>`).join('');
+                }
+            }
+        }
+
+        function applyMainFilters() {
+            const driverSelect = getElement('driverFilter');
+            const truckSelect = getElement('truckFilter');
+            const startDateInput = getElement('mainStartDate');
+            const endDateInput = getElement('mainEndDate');
+            
+            mainFilters.driver = driverSelect ? driverSelect.value : 'all';
+            mainFilters.truck = truckSelect ? truckSelect.value : 'all';
+            mainFilters.startDate = startDateInput ? startDateInput.value : '';
+            mainFilters.endDate = endDateInput ? endDateInput.value : '';
+            
+            // Re-render MAIN tab with filters
+            if (currentView === 'MAIN') {
+                displayTabData('MAIN');
+            }
+        }
+
+        function clearMainFilters() {
+            const driverSelect = getElement('driverFilter');
+            const truckSelect = getElement('truckFilter');
+            const startDateInput = getElement('mainStartDate');
+            const endDateInput = getElement('mainEndDate');
+            
+            if (driverSelect) driverSelect.value = 'all';
+            if (truckSelect) truckSelect.value = 'all';
+            if (startDateInput) startDateInput.value = '';
+            if (endDateInput) endDateInput.value = '';
+            
+            mainFilters = { driver: 'all', truck: 'all', startDate: '', endDate: '' };
+            
+            if (currentView === 'MAIN') {
+                displayTabData('MAIN');
+            }
+        }
+
+        function filterMainRows(rows) {
+            const headers = allSheetData['MAIN']?.rawHeaders || [];
+            const driverIdx = findColumnIndex(headers, 'driver');
+            const truckIdx = findColumnIndex(headers, 'truck') !== -1 ? 
+                findColumnIndex(headers, 'truck') : findColumnIndex(headers, 'reg');
+            const dateIdx = findColumnIndex(headers, 'date') !== -1 ? 
+                findColumnIndex(headers, 'date') : findColumnIndex(headers, 'timestamp');
+            
+            return rows.filter(row => {
+                // Driver filter
+                if (mainFilters.driver !== 'all' && driverIdx !== -1) {
+                    if (row[driverIdx] !== mainFilters.driver) return false;
+                }
+                
+                // Truck filter
+                if (mainFilters.truck !== 'all' && truckIdx !== -1) {
+                    if (row[truckIdx] !== mainFilters.truck) return false;
+                }
+                
+                // Date range filter
+                if ((mainFilters.startDate || mainFilters.endDate) && dateIdx !== -1) {
+                    const rowDate = normalizeDate(row[dateIdx] || '');
+                    if (rowDate) {
+                        if (mainFilters.startDate && rowDate < mainFilters.startDate) return false;
+                        if (mainFilters.endDate && rowDate > mainFilters.endDate) return false;
+                    }
+                }
+                
+                return true;
+            });
+        }
+
         function displayTabData(tabName) {
             const tabData = allSheetData[tabName];
             if (!tabData) {
@@ -336,6 +454,8 @@
             const columnHeaders = getElement('tabColumnHeaders');
             const excelGrid = getElement('tabExcelGrid');
             const tabTitle = getElement('currentTabTitle');
+            const filterBar = getElement('mainFilterBar');
+            const filterStats = getElement('mainFilterStats');
             
             if (!columnHeaders || !excelGrid) return;
             
@@ -343,6 +463,11 @@
             excelGrid.innerHTML = '';
             
             if (tabTitle) tabTitle.textContent = tabName;
+            
+            // Show/hide filter bar based on tab
+            if (filterBar) {
+                filterBar.style.display = tabName === 'MAIN' ? 'flex' : 'none';
+            }
             
             const headers = tabData.rawHeaders || [];
             
@@ -369,8 +494,20 @@
                 columnHeaders.appendChild(colHeader);
             });
             
+            // Get filtered data for MAIN tab
+            let rowsToDisplay = tabData.data;
+            let filteredCount = rowsToDisplay.length;
+            
+            if (tabName === 'MAIN') {
+                rowsToDisplay = filterMainRows(tabData.data);
+                filteredCount = rowsToDisplay.length;
+                if (filterStats) {
+                    filterStats.textContent = `Showing ${filteredCount} of ${tabData.data.length} rows`;
+                }
+            }
+            
             // Create data rows
-            tabData.data.forEach((row, rowIndex) => {
+            rowsToDisplay.forEach((row, rowIndex) => {
                 const excelRow = document.createElement('div');
                 excelRow.className = 'excel-row';
                 
@@ -395,7 +532,7 @@
             
             // Update footer
             const footerVehicleCount = getElement('footerVehicleCount');
-            if (footerVehicleCount) footerVehicleCount.textContent = tabData.data.length;
+            if (footerVehicleCount) footerVehicleCount.textContent = rowsToDisplay.length;
         }
 
         function updateDashboard() {
@@ -684,9 +821,8 @@
                     
                     // Variance - also color by vehicle (with background highlight)
                     const varCell = document.createElement('div');
-                    varCell.className = `comp-cell ${vehicleClass}`; // base vehicle color
+                    varCell.className = `comp-cell ${vehicleClass}`;
                     if (Math.abs(variance) > 10 && mainVal > 0 && vehicleVal > 0) {
-                        // add positive/negative class for background, keep vehicle color from parent
                         varCell.classList.add(variance > 0 ? 'positive' : 'negative');
                     }
                     varCell.textContent = variance !== 0 ? Math.round(variance).toLocaleString() : '-';
@@ -753,10 +889,16 @@
                 return;
             }
             
+            // For MAIN tab, export filtered data
+            let dataToExport = tabData.data;
+            if (currentView === 'MAIN') {
+                dataToExport = filterMainRows(tabData.data);
+            }
+            
             const headers = tabData.rawHeaders || [];
             let csvContent = headers.join(',') + '\n';
             
-            tabData.data.forEach(row => {
+            dataToExport.forEach(row => {
                 csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
             });
             
