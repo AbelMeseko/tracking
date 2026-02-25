@@ -267,6 +267,12 @@
         }
 
         function processDailyTotals() {
+            // 🔥 FIX: Clear existing totals before recalculating to prevent duplication
+            dailyTotals = {
+                MAIN: {},
+                VEHICLE: {}
+            };
+            
             // Initialize daily totals for each vehicle
             VEHICLES.forEach(vehicle => {
                 if (!dailyTotals.MAIN[vehicle]) dailyTotals.MAIN[vehicle] = {};
@@ -334,7 +340,7 @@
                 });
             });
             
-            console.log('Daily totals processed:', dailyTotals);
+            console.log('Daily totals processed (fresh):', dailyTotals);
         }
 
         function populateMainFilters() {
@@ -966,3 +972,4 @@
             // Show nice loading by default (already visible)
             setTimeout(loadAllSheets, 100);
         });
+
