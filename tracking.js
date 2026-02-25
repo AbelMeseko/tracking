@@ -1,4 +1,4 @@
-        // Configuration
+
         const SHEET_ID = '1UvzxLfth-MYeEa63k6VS1qpZfUXwKF_PholJ9YaDLO8';
         
         // Tab GIDs
@@ -901,17 +901,37 @@
                 dataToExport = filterMainRows(tabData.data);
             }
             
+            // Create HTML table for Excel (better formatting)
             const headers = tabData.rawHeaders || [];
-            let csvContent = headers.join(',') + '\n';
+            let html = '<html><head><meta charset="UTF-8"><title>' + currentView + '</title></head><body>';
+            html += '<table border="1">';
             
+            // Header row
+            html += '<tr>';
+            headers.forEach(header => {
+                if (header && header.trim() !== '') {
+                    html += '<th>' + header + '</th>';
+                }
+            });
+            html += '</tr>';
+            
+            // Data rows
             dataToExport.forEach(row => {
-                csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+                html += '<tr>';
+                headers.forEach((header, colIndex) => {
+                    if (!header || header.trim() === '') return;
+                    let value = colIndex < row.length ? row[colIndex] : '-';
+                    html += '<td>' + value + '</td>';
+                });
+                html += '</tr>';
             });
             
-            const blob = new Blob([csvContent], { type: 'text/csv' });
+            html += '</table></body></html>';
+            
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.download = `${currentView}-${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `${currentView}-${new Date().toISOString().slice(0,10)}.xls`;
             a.href = url;
             a.click();
             URL.revokeObjectURL(url);
@@ -924,29 +944,42 @@
             const vehicles = selectedVehicle === 'all' ? VEHICLES : [selectedVehicle];
             const dateRange = getDateRange();
             
-            // Create CSV
-            let csv = 'Date';
-            vehicles.forEach(v => {
-                csv += `,${v} MAIN (km),${v} TAB (km),${v} Variance`;
-            });
-            csv += '\n';
+            // Create HTML table for Excel
+            let html = '<html><head><meta charset="UTF-8"><title>Daily Comparison</title></head><body>';
+            html += '<table border="1">';
             
+            // Header row
+            html += '<tr><th>Date</th>';
+            vehicles.forEach(vehicle => {
+                html += `<th>${vehicle} MAIN (km)</th><th>${vehicle} TAB (km)</th><th>${vehicle} Variance</th>`;
+            });
+            html += '</tr>';
+            
+            // Data rows
             dateRange.forEach(date => {
-                let row = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                html += '<tr>';
+                const displayDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                html += `<td>${displayDate}</td>`;
+                
                 vehicles.forEach(vehicle => {
                     const mainVal = dailyTotals.MAIN[vehicle]?.[date] || 0;
                     const vehicleVal = dailyTotals.VEHICLE[vehicle]?.[date] || 0;
                     const variance = mainVal - vehicleVal;
                     
-                    row += `,${Math.round(mainVal)},${Math.round(vehicleVal)},${Math.round(variance)}`;
+                    html += `<td>${Math.round(mainVal)}</td>`;
+                    html += `<td>${Math.round(vehicleVal)}</td>`;
+                    html += `<td>${Math.round(variance)}</td>`;
                 });
-                csv += row + '\n';
+                
+                html += '</tr>';
             });
             
-            const blob = new Blob([csv], { type: 'text/csv' });
+            html += '</table></body></html>';
+            
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.download = `date-range-${selectedVehicle}-${new Date().toISOString().slice(0,10)}.csv`;
+            a.download = `date-range-${selectedVehicle}-${new Date().toISOString().slice(0,10)}.xls`;
             a.href = url;
             a.click();
             URL.revokeObjectURL(url);
@@ -972,4 +1005,4 @@
             // Show nice loading by default (already visible)
             setTimeout(loadAllSheets, 100);
         });
-
+ 
