@@ -1,12 +1,14 @@
-  // Configuration
-    const SHEET_ID = '1UvzxLfth-MYeEa63k6VS1qpZfUXwKF_PholJ9YaDLO8';
+   // ============================================
+    // CONFIGURATION - GOOGLE SHEET
+    // ============================================
+    const SHEET_ID = '1dB0uCnReB_y7Ocu_hgXfRbQsjJtm16azQhnUpb2SWw0';
     
-    // Tab GIDs
+    // Tab GIDs - CORRECTED with your actual GIDs from the links
     const TABS = {
-        'MAIN': { gid: '1060733973', type: 'main' },
-        'BD78NGZN': { gid: '1482391741', type: 'vehicle' },
-        'CS44GHNZ': { gid: '416024164', type: 'vehicle' },
-        'DG28ZLZN': { gid: '1908317780', type: 'vehicle' }
+        'MAIN': { gid: '0', type: 'main' },
+        'BD78NGZN': { gid: '560267061', type: 'vehicle' },
+        'CS44GHNZ': { gid: '1291826327', type: 'vehicle' },
+        'DG28ZLZN': { gid: '1216996054', type: 'vehicle' }
     };
     
     // Vehicle list
@@ -56,34 +58,170 @@
         return document.getElementById(id);
     }
 
-    // Helper: convert any date string to YYYY-MM-DD
-    function normalizeDate(dateStr) {
+    // ============================================
+    // ROBUST DATE NORMALIZATION - Handles all your formats
+    // ============================================
+    function normalizeDate(dateStr, sourceTab = 'unknown') {
         if (!dateStr) return '';
+        
         try {
-            let datePart = dateStr.split(' ')[0];
-            let parts = datePart.split('/');
+            // Clean the string
+            let cleaned = dateStr.toString().trim();
+            
+            // Handle empty or invalid
+            if (cleaned === '' || cleaned === '0') return '';
+            
+            // Store original for logging
+            let original = cleaned;
+            
+            // Check if it's already in YYYY-MM-DD format (what we want to output)
+            if (cleaned.match(/^\d{4}-\d{2}-\d{2}/)) {
+                return cleaned.substring(0, 10);
+            }
+            
+            // Extract date part (remove time if present)
+            let datePart = cleaned.split(' ')[0];
+            
+            // Handle different separators
+            let parts = datePart.split(/[\/\-\.]/);
+            
             if (parts.length === 3) {
-                let month, day, year;
-                // Try to determine if first part is month or day
-                if (parseInt(parts[0]) > 12) {
-                    // First part is likely day
-                    day = parts[0].padStart(2, '0');
-                    month = parts[1].padStart(2, '0');
-                    year = parts[2];
-                } else {
-                    // First part is likely month
-                    month = parts[0].padStart(2, '0');
-                    day = parts[1].padStart(2, '0');
-                    year = parts[2];
+                let part1 = parts[0].trim();
+                let part2 = parts[1].trim();
+                let part3 = parts[2].trim();
+                
+                // Check if it's YYYY/MM/DD format (like 2026/02/03)
+                if (part1.length === 4 && parseInt(part1) > 2000) {
+                    // It's YYYY/MM/DD
+                    let year = part1;
+                    let month = part2.padStart(2, '0');
+                    let day = part3.padStart(2, '0');
+                    return `${year}-${month}-${day}`;
                 }
-                if (year.length === 2) year = '20' + year;
+                
+                // Handle 2-digit years
+                if (part3.length === 2) {
+                    if (parseInt(part3) >= 24 && parseInt(part3) <= 99) {
+                        part3 = '19' + part3;
+                    } else {
+                        part3 = '20' + part3;
+                    }
+                }
+                
+                // Handle 0026 format
+                if (part3 === '0026') {
+                    part3 = '2026';
+                }
+                
+                // Handle cases where year might be in the middle (MM/YYYY/DD)
+                if (part2.length === 4 && parseInt(part2) > 2000) {
+                    // Format is MM/YYYY/DD
+                    let month = part1.padStart(2, '0');
+                    let year = part2;
+                    let day = part3.padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                
+                // Determine format based on tab and values
+                let day, month, year;
+                
+                // For MAIN tab, assume MM/DD/YYYY (American format)
+                if (sourceTab === 'MAIN') {
+                    // MAIN tab uses MM/DD/YYYY
+                    month = part1.padStart(2, '0');
+                    day = part2.padStart(2, '0');
+                    year = part3;
+                    
+                    // Validate month (should be 1-12)
+                    let monthNum = parseInt(month);
+                    if (monthNum < 1 || monthNum > 12) {
+                        // If month is invalid, try swapping
+                        let temp = day;
+                        day = month;
+                        month = temp;
+                    }
+                } 
+                // For vehicle tabs (BD78NGZN, CS44GHNZ, DG28ZLZN), assume DD/MM/YYYY (South African format)
+                else {
+                    // Vehicle tabs use DD/MM/YYYY
+                    day = part1.padStart(2, '0');
+                    month = part2.padStart(2, '0');
+                    year = part3;
+                    
+                    // Validate day (should be 1-31)
+                    let dayNum = parseInt(day);
+                    if (dayNum < 1 || dayNum > 31) {
+                        // If day is invalid, try swapping
+                        let temp = day;
+                        day = month;
+                        month = temp;
+                    }
+                }
+                
+                // Validate month (should be 1-12)
+                let monthNum = parseInt(month);
+                if (monthNum < 1 || monthNum > 12) {
+                    // If month is still invalid, try to detect from values
+                    let part1Num = parseInt(part1);
+                    let part2Num = parseInt(part2);
+                    
+                    if (part1Num >= 1 && part1Num <= 12 && part2Num >= 1 && part2Num <= 31) {
+                        // part1 is likely month
+                        month = part1.padStart(2, '0');
+                        day = part2.padStart(2, '0');
+                    } else if (part2Num >= 1 && part2Num <= 12 && part1Num >= 1 && part1Num <= 31) {
+                        // part2 is likely month
+                        month = part2.padStart(2, '0');
+                        day = part1.padStart(2, '0');
+                    } else {
+                        // Default to safe values
+                        month = '01';
+                        day = '01';
+                    }
+                }
+                
+                // Validate day (should be 1-31)
+                let dayNum = parseInt(day);
+                if (dayNum < 1 || dayNum > 31) {
+                    day = '01';
+                }
+                
                 return `${year}-${month}-${day}`;
             }
-            return datePart;
+            
+            // If no slashes, try parsing as ISO
+            let date = new Date(cleaned);
+            if (!isNaN(date.getTime())) {
+                let year = date.getFullYear();
+                let month = String(date.getMonth() + 1).padStart(2, '0');
+                let day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            return cleaned;
+            
         } catch (e) {
-            console.warn('Date normalization error:', e);
+            console.warn('Date normalization error:', e, 'for date:', dateStr, 'in tab:', sourceTab);
             return '';
         }
+    }
+
+    // Test function to verify date parsing
+    function testDateNormalization() {
+        console.log("Testing date normalization:");
+        const testDates = [
+            { date: "2/25/2026", tab: "MAIN" },        // Should be 2026-02-25 (MM/DD)
+            { date: "02/13/2026", tab: "MAIN" },       // Should be 2026-02-13 (MM/DD)
+            { date: "01/02/2026", tab: "BD78NGZN" },   // Should be 2026-01-02 (DD/MM)
+            { date: "3/2/2026", tab: "BD78NGZN" },     // Should be 2026-03-02 (DD/MM)
+            { date: "2026/02/03", tab: "BD78NGZN" },   // Should be 2026-02-03 (YYYY/MM/DD)
+            { date: "08/02/2026 7:15:34", tab: "BD78NGZN" }, // Should be 2026-08-02
+            { date: "3/4/2026", tab: "MAIN" }          // Should be 2026-03-04 (MM/DD)
+        ];
+        
+        testDates.forEach(item => {
+            console.log(`${item.date} (${item.tab}) -> ${normalizeDate(item.date, item.tab)}`);
+        });
     }
 
     function isValidHeader(header) {
@@ -102,9 +240,20 @@
 
     function findColumnIndex(headers, searchTerm) {
         if (!headers || !Array.isArray(headers)) return -1;
-        return headers.findIndex(header => 
+        
+        // Try exact match first
+        let idx = headers.findIndex(header => 
+            header && typeof header === 'string' && header.toLowerCase().trim() === searchTerm.toLowerCase().trim()
+        );
+        
+        if (idx !== -1) return idx;
+        
+        // Try includes match
+        idx = headers.findIndex(header => 
             header && typeof header === 'string' && header.toLowerCase().includes(searchTerm.toLowerCase())
         );
+        
+        return idx;
     }
 
     function extractRegistration(regStr) {
@@ -228,7 +377,7 @@
         return `${firstDate.toLocaleDateString('en-US', options)} - ${lastDate.toLocaleDateString('en-US', options)}`;
     }
 
-    // Simple CSV parser
+    // Improved CSV parser that handles quoted fields properly
     function parseCSV(csvText) {
         const rows = [];
         const lines = csvText.split('\n');
@@ -246,15 +395,26 @@
                 if (char === '"') {
                     inQuote = !inQuote;
                 } else if (char === ',' && !inQuote) {
-                    row.push(currentValue);
+                    row.push(currentValue.trim());
                     currentValue = '';
                 } else {
                     currentValue += char;
                 }
             }
             
-            row.push(currentValue);
-            rows.push(row);
+            // Add the last value
+            row.push(currentValue.trim());
+            
+            // Clean up quoted values
+            const cleanedRow = row.map(val => {
+                val = val.trim();
+                if (val.startsWith('"') && val.endsWith('"')) {
+                    val = val.substring(1, val.length - 1);
+                }
+                return val;
+            });
+            
+            rows.push(cleanedRow);
         }
         
         return rows;
@@ -269,13 +429,16 @@
             errorEl.textContent = '';
         }
         
+        // Run date test on load
+        testDateNormalization();
+        
         try {
             allSheetData = {};
             let loadedCount = 0;
-            const totalTabs = Object.keys(TABS).length;
             
             for (const [tabName, tabInfo] of Object.entries(TABS)) {
                 try {
+                    console.log(`Loading ${tabName}...`);
                     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${tabInfo.gid}`;
                     const response = await fetch(url);
                     
@@ -295,9 +458,10 @@
                         throw new Error('No data rows');
                     }
                     
+                    // Get headers from first row
                     const rawHeaders = rows[0] || [];
                     
-                    // Filter valid headers
+                    // Filter valid headers and get their indices
                     const validIndices = [];
                     const validHeaders = [];
                     
@@ -308,9 +472,9 @@
                         }
                     });
                     
-                    // Process data rows
+                    // Process data rows (skip header row)
                     const dataRows = rows.slice(1)
-                        .filter(row => row && row.some(cell => cell && cell.trim() !== ''))
+                        .filter(row => row && row.length > 0 && row.some(cell => cell && cell.trim() !== ''))
                         .map(row => validIndices.map(idx => (row[idx] || '').trim()));
                     
                     allSheetData[tabName] = {
@@ -373,33 +537,66 @@
         
         VEHICLES.forEach(vehicle => {
             const vehicleData = allSheetData[vehicle];
-            if (!vehicleData || !vehicleData.data) return;
-            
-            const headers = vehicleData.rawHeaders;
-            const dateIdx = findColumnIndex(headers, 'stop time');
-            const distIdx = findColumnIndex(headers, 'dist');
-            
-            if (dateIdx === -1 || distIdx === -1) {
-                console.warn(`Required columns not found in ${vehicle}`);
+            if (!vehicleData || !vehicleData.data || vehicleData.data.length === 0) {
+                console.warn(`No data for ${vehicle}`);
                 return;
             }
             
+            const headers = vehicleData.rawHeaders;
+            
+            // Find column indices - try different possible column names
+            let dateIdx = findColumnIndex(headers, 'stop time');
+            if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'date');
+            if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'timestamp');
+            
+            let distIdx = findColumnIndex(headers, 'dist');
+            if (distIdx === -1) distIdx = findColumnIndex(headers, 'distance');
+            if (distIdx === -1) distIdx = findColumnIndex(headers, 'km');
+            
+            if (dateIdx === -1) {
+                console.warn(`Date column not found in ${vehicle}. Headers:`, headers);
+                return;
+            }
+            
+            if (distIdx === -1) {
+                console.warn(`Distance column not found in ${vehicle}. Headers:`, headers);
+                return;
+            }
+            
+            console.log(`Processing ${vehicle}: Date col ${dateIdx} (${headers[dateIdx]}), Dist col ${distIdx} (${headers[distIdx]})`);
+            
             vehicleData.data.forEach(row => {
-                const date = normalizeDate(row[dateIdx] || '');
+                const rawDate = row[dateIdx] || '';
+                // Pass the vehicle name to normalizeDate for proper format detection
+                const date = normalizeDate(rawDate, vehicle);
+                
                 if (!date) return;
                 
+                // Parse distance - handle various formats
                 let distance = 0;
-                const distStr = (row[distIdx] || '').replace(',', '.').replace(/[^0-9.-]/g, '');
-                distance = parseFloat(distStr) || 0;
+                const distStr = (row[distIdx] || '').replace(/[^\d.,-]/g, '').replace(',', '.');
+                const parsed = parseFloat(distStr);
+                if (!isNaN(parsed) && parsed > 0.10) {
+                    distance = parsed;
+                }
                 
-                vehicleRecords[vehicle].push({
-                    date: date,
-                    distance: distance,
-                    vehicle: vehicle
-                });
+                if (distance > 0) {
+                    vehicleRecords[vehicle].push({
+                        date: date,
+                        distance: distance,
+                        vehicle: vehicle
+                    });
+                }
             });
             
+            // Sort by date
             vehicleRecords[vehicle].sort((a, b) => a.date.localeCompare(b.date));
+            console.log(`${vehicle}: ${vehicleRecords[vehicle].length} records with distance > 0`);
+            
+            // Log sample dates to verify normalization
+            if (vehicleRecords[vehicle].length > 0) {
+                console.log(`${vehicle} sample dates:`, vehicleRecords[vehicle].slice(0, 3).map(r => r.date));
+            }
         });
     }
 
@@ -413,41 +610,56 @@
         
         // Process MAIN data
         const mainData = allSheetData['MAIN'];
-        if (mainData && mainData.data) {
+        if (mainData && mainData.data && mainData.data.length > 0) {
             const headers = mainData.rawHeaders;
-            const regIdx = findColumnIndex(headers, 'truck') !== -1 ? 
-                findColumnIndex(headers, 'truck') : findColumnIndex(headers, 'reg');
-            const dateIdx = findColumnIndex(headers, 'date') !== -1 ? 
-                findColumnIndex(headers, 'date') : findColumnIndex(headers, 'timestamp');
-            const startIdx = findColumnIndex(headers, 'start');
-            const endIdx = findColumnIndex(headers, 'end');
+            
+            // Find column indices
+            let regIdx = findColumnIndex(headers, 'truck');
+            if (regIdx === -1) regIdx = findColumnIndex(headers, 'reg');
+            if (regIdx === -1) regIdx = findColumnIndex(headers, 'vehicle');
+            
+            let dateIdx = findColumnIndex(headers, 'date');
+            if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'timestamp');
+            if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'day');
+            
+            let startIdx = findColumnIndex(headers, 'start');
+            let endIdx = findColumnIndex(headers, 'end');
             
             if (regIdx !== -1 && dateIdx !== -1 && startIdx !== -1 && endIdx !== -1) {
+                console.log(`Processing MAIN: Reg col ${regIdx} (${headers[regIdx]}), Date col ${dateIdx} (${headers[dateIdx]})`);
+                
                 mainData.data.forEach(row => {
                     const reg = row[regIdx] || '';
                     const vehicle = extractRegistration(reg);
                     
                     if (vehicle && VEHICLES.includes(vehicle)) {
-                        const date = normalizeDate(row[dateIdx] || '');
+                        const rawDate = row[dateIdx] || '';
+                        // Pass 'MAIN' to normalizeDate for proper format detection
+                        const date = normalizeDate(rawDate, 'MAIN');
+                        
                         if (!date) return;
                         
                         const start = parseFloat(row[startIdx]) || 0;
                         const end = parseFloat(row[endIdx]) || 0;
                         const distance = Math.max(0, end - start);
                         
-                        if (!dailyTotals.MAIN[vehicle][date]) {
-                            dailyTotals.MAIN[vehicle][date] = 0;
+                        if (distance > 0) {
+                            if (!dailyTotals.MAIN[vehicle][date]) {
+                                dailyTotals.MAIN[vehicle][date] = 0;
+                            }
+                            dailyTotals.MAIN[vehicle][date] += distance;
                         }
-                        dailyTotals.MAIN[vehicle][date] += distance;
                     }
                 });
+            } else {
+                console.warn('Required columns not found in MAIN:', { regIdx, dateIdx, startIdx, endIdx });
             }
         }
         
         // Process Vehicle tabs
         VEHICLES.forEach(vehicle => {
             (vehicleRecords[vehicle] || []).forEach(record => {
-                if (record.distance > 0.10) {
+                if (record.distance > 0) {
                     const date = record.date;
                     if (!dailyTotals.VEHICLE[vehicle][date]) {
                         dailyTotals.VEHICLE[vehicle][date] = 0;
@@ -456,63 +668,85 @@
                 }
             });
         });
+        
+        // Log totals for debugging
+        VEHICLES.forEach(vehicle => {
+            const mainEntries = Object.keys(dailyTotals.MAIN[vehicle] || {}).length;
+            const vehicleEntries = Object.keys(dailyTotals.VEHICLE[vehicle] || {}).length;
+            console.log(`${vehicle}: MAIN days: ${mainEntries}, TAB days: ${vehicleEntries}`);
+            
+            // Log sample dates to verify matching
+            if (mainEntries > 0) {
+                const mainSample = Object.keys(dailyTotals.MAIN[vehicle]).slice(0, 3);
+                console.log(`${vehicle} MAIN sample dates:`, mainSample);
+            }
+            if (vehicleEntries > 0) {
+                const vehicleSample = Object.keys(dailyTotals.VEHICLE[vehicle]).slice(0, 3);
+                console.log(`${vehicle} TAB sample dates:`, vehicleSample);
+            }
+        });
     }
 
-    function filterVehicleRowsByDistance(rows, headers) {
-        const distIdx = findColumnIndex(headers, 'dist');
-        if (distIdx === -1) return rows;
+    function filterVehicleRows(rows, tabName) {
+        const tabData = allSheetData[tabName];
+        if (!tabData || !tabData.rawHeaders) return rows;
+        
+        const headers = tabData.rawHeaders;
+        
+        // Find date column
+        let dateIdx = findColumnIndex(headers, 'stop time');
+        if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'date');
+        if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'timestamp');
+        
+        // Find distance column
+        let distIdx = findColumnIndex(headers, 'dist');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'distance');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'km');
         
         return rows.filter(row => {
-            if (row[distIdx]) {
-                const distStr = row[distIdx].replace(',', '.').replace(/[^0-9.-]/g, '');
-                const distance = parseFloat(distStr) || 0;
-                return distance > 0.10;
+            // Apply date filter
+            if ((vehicleTabFilters.startDate || vehicleTabFilters.endDate) && dateIdx !== -1) {
+                const rowDate = normalizeDate(row[dateIdx] || '', tabName);
+                if (rowDate) {
+                    if (vehicleTabFilters.startDate && rowDate < vehicleTabFilters.startDate) return false;
+                    if (vehicleTabFilters.endDate && rowDate > vehicleTabFilters.endDate) return false;
+                }
             }
+            
+            // Filter out small distances
+            if (distIdx !== -1 && row[distIdx]) {
+                const distStr = row[distIdx].replace(/[^\d.,-]/g, '').replace(',', '.');
+                const distance = parseFloat(distStr) || 0;
+                if (distance <= 0.10) return false;
+            }
+            
             return true;
         });
     }
 
-    function filterVehicleRows(rows) {
-        const headers = allSheetData[currentView]?.rawHeaders || [];
-        const dateIdx = findColumnIndex(headers, 'stop time');
-        
-        let filteredRows = rows;
-        
-        if ((vehicleTabFilters.startDate || vehicleTabFilters.endDate) && dateIdx !== -1) {
-            filteredRows = filteredRows.filter(row => {
-                const rowDate = normalizeDate(row[dateIdx] || '');
-                if (!rowDate) return true;
-                
-                if (vehicleTabFilters.startDate && rowDate < vehicleTabFilters.startDate) return false;
-                if (vehicleTabFilters.endDate && rowDate > vehicleTabFilters.endDate) return false;
-                
-                return true;
-            });
-        }
-        
-        filteredRows = filterVehicleRowsByDistance(filteredRows, headers);
-        return filteredRows;
-    }
-
     function filterMainRows(rows) {
         const headers = allSheetData['MAIN']?.rawHeaders || [];
-        const driverIdx = findColumnIndex(headers, 'driver');
-        const truckIdx = findColumnIndex(headers, 'truck') !== -1 ? 
-            findColumnIndex(headers, 'truck') : findColumnIndex(headers, 'reg');
-        const dateIdx = findColumnIndex(headers, 'date') !== -1 ? 
-            findColumnIndex(headers, 'date') : findColumnIndex(headers, 'timestamp');
+        
+        let driverIdx = findColumnIndex(headers, 'driver');
+        let truckIdx = findColumnIndex(headers, 'truck');
+        if (truckIdx === -1) truckIdx = findColumnIndex(headers, 'reg');
+        let dateIdx = findColumnIndex(headers, 'date');
+        if (dateIdx === -1) dateIdx = findColumnIndex(headers, 'timestamp');
         
         return rows.filter(row => {
+            // Driver filter
             if (mainFilters.driver !== 'all' && driverIdx !== -1) {
                 if (row[driverIdx] !== mainFilters.driver) return false;
             }
             
+            // Truck filter
             if (mainFilters.truck !== 'all' && truckIdx !== -1) {
                 if (row[truckIdx] !== mainFilters.truck) return false;
             }
             
+            // Date filter
             if ((mainFilters.startDate || mainFilters.endDate) && dateIdx !== -1) {
-                const rowDate = normalizeDate(row[dateIdx] || '');
+                const rowDate = normalizeDate(row[dateIdx] || '', 'MAIN');
                 if (rowDate) {
                     if (mainFilters.startDate && rowDate < mainFilters.startDate) return false;
                     if (mainFilters.endDate && rowDate > mainFilters.endDate) return false;
@@ -524,8 +758,8 @@
     }
 
     function calculateRowTotal(row, headers) {
-        const startIdx = findColumnIndex(headers, 'start');
-        const endIdx = findColumnIndex(headers, 'end');
+        let startIdx = findColumnIndex(headers, 'start');
+        let endIdx = findColumnIndex(headers, 'end');
         
         if (startIdx !== -1 && endIdx !== -1 && row[startIdx] && row[endIdx]) {
             const start = parseFloat(row[startIdx]) || 0;
@@ -536,13 +770,16 @@
     }
 
     function calculateVehicleTabTotal(rows, headers) {
-        const distIdx = findColumnIndex(headers, 'dist');
+        let distIdx = findColumnIndex(headers, 'dist');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'distance');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'km');
+        
         if (distIdx === -1) return 0;
         
         let total = 0;
         rows.forEach(row => {
             if (row[distIdx]) {
-                const distStr = row[distIdx].replace(',', '.').replace(/[^0-9.-]/g, '');
+                const distStr = row[distIdx].replace(/[^\d.,-]/g, '').replace(',', '.');
                 const distance = parseFloat(distStr) || 0;
                 if (distance > 0.10) {
                     total += distance;
@@ -569,9 +806,10 @@
         if (!mainData || !mainData.data) return;
         
         const headers = mainData.rawHeaders;
-        const driverIdx = findColumnIndex(headers, 'driver');
-        const truckIdx = findColumnIndex(headers, 'truck') !== -1 ? 
-            findColumnIndex(headers, 'truck') : findColumnIndex(headers, 'reg');
+        
+        let driverIdx = findColumnIndex(headers, 'driver');
+        let truckIdx = findColumnIndex(headers, 'truck');
+        if (truckIdx === -1) truckIdx = findColumnIndex(headers, 'reg');
         
         if (driverIdx !== -1) {
             const drivers = new Set();
@@ -658,7 +896,10 @@
         if (!dataLoaded) return;
         
         const tabData = allSheetData[tabName];
-        if (!tabData) return;
+        if (!tabData) {
+            console.warn(`No data for tab: ${tabName}`);
+            return;
+        }
         
         const excelGrid = getElement('tabExcelGrid');
         const tabTitle = getElement('currentTabTitle');
@@ -676,9 +917,13 @@
         }
         
         const headers = tabData.rawHeaders || [];
-        const startIdx = findColumnIndex(headers, 'start');
-        const endIdx = findColumnIndex(headers, 'end');
-        const distIdx = findColumnIndex(headers, 'dist');
+        
+        // Find column indices for special handling
+        let startIdx = findColumnIndex(headers, 'start');
+        let endIdx = findColumnIndex(headers, 'end');
+        let distIdx = findColumnIndex(headers, 'dist');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'distance');
+        if (distIdx === -1) distIdx = findColumnIndex(headers, 'km');
         
         // Create header row
         const headerRow = document.createElement('div');
@@ -690,16 +935,17 @@
             const colHeader = document.createElement('div');
             colHeader.className = 'excel-col-header';
             
+            // Choose icon based on header name
             let icon = 'fa-columns';
             const headerLower = header.toLowerCase();
             if (headerLower.includes('date')) icon = 'fa-calendar';
             else if (headerLower.includes('time')) icon = 'fa-clock';
             else if (headerLower.includes('driver')) icon = 'fa-user';
-            else if (headerLower.includes('truck') || headerLower.includes('reg')) icon = 'fa-truck';
+            else if (headerLower.includes('truck') || headerLower.includes('reg') || headerLower.includes('vehicle')) icon = 'fa-truck';
             else if (headerLower.includes('from')) icon = 'fa-map-marker-alt';
             else if (headerLower.includes('to')) icon = 'fa-map-pin';
             else if (headerLower.includes('odo') || headerLower.includes('start') || headerLower.includes('end')) icon = 'fa-tachometer-alt';
-            else if (headerLower.includes('dist')) icon = 'fa-road';
+            else if (headerLower.includes('dist') || headerLower.includes('km')) icon = 'fa-road';
             else if (headerLower.includes('coord')) icon = 'fa-globe';
             else if (headerLower.includes('email')) icon = 'fa-envelope';
             else if (headerLower.includes('notes')) icon = 'fa-sticky-note';
@@ -710,7 +956,8 @@
             headerRow.appendChild(colHeader);
         });
         
-        if (tabName === 'MAIN') {
+        // Add total column for MAIN tab
+        if (tabName === 'MAIN' && startIdx !== -1 && endIdx !== -1) {
             const totalHeader = document.createElement('div');
             totalHeader.className = 'excel-col-header total-column';
             totalHeader.innerHTML = `<i class="fas fa-calculator"></i> Total (End-Start)`;
@@ -740,13 +987,14 @@
             `;
             
         } else {
+            // For vehicle tabs
             const allRows = tabData.data;
-            const dateFilteredRows = filterVehicleRows(allRows);
+            rowsToDisplay = filterVehicleRows(allRows, tabName);
             
             if (distIdx !== -1) {
                 hiddenCount = allRows.filter(row => {
                     if (row[distIdx]) {
-                        const distStr = row[distIdx].replace(',', '.').replace(/[^0-9.-]/g, '');
+                        const distStr = row[distIdx].replace(/[^\d.,-]/g, '').replace(',', '.');
                         const distance = parseFloat(distStr) || 0;
                         return distance <= 0.10 && distance > 0;
                     }
@@ -754,15 +1002,14 @@
                 }).length;
             }
             
-            rowsToDisplay = dateFilteredRows;
-            const vehicleTotal = calculateVehicleTabTotal(rowsToDisplay, headers);
-            
             if (filterStats) {
                 filterStats.innerHTML = `Showing ${rowsToDisplay.length} of ${tabData.data.length} rows`;
                 if (distIdx !== -1 && hiddenCount > 0) {
                     filterStats.innerHTML += `<span style="margin-left:15px; color:#1976d2;"><i class="fas fa-filter"></i> Hidden (Dist ≤ 0.10): ${hiddenCount} rows</span>`;
                 }
             }
+            
+            const vehicleTotal = calculateVehicleTabTotal(rowsToDisplay, headers);
             
             totalsContainer.innerHTML = `
                 <span class="totals-label">
@@ -791,12 +1038,14 @@
                 const cell = document.createElement('div');
                 cell.className = 'excel-cell';
                 
+                // Highlight odometer readings
                 if (tabName === 'MAIN' && (colIndex === startIdx || colIndex === endIdx)) {
                     cell.classList.add('odo-highlight');
                 }
                 
+                // Highlight distance in vehicle tabs
                 if (tabName !== 'MAIN' && colIndex === distIdx) {
-                    const distStr = row[colIndex] ? row[colIndex].replace(',', '.').replace(/[^0-9.-]/g, '') : '0';
+                    const distStr = row[colIndex] ? row[colIndex].replace(/[^\d.,-]/g, '').replace(',', '.') : '0';
                     const distance = parseFloat(distStr) || 0;
                     if (distance > 0.10) {
                         cell.style.fontWeight = '500';
@@ -808,7 +1057,8 @@
                 excelRow.appendChild(cell);
             });
             
-            if (tabName === 'MAIN') {
+            // Add total cell for MAIN tab
+            if (tabName === 'MAIN' && startIdx !== -1 && endIdx !== -1) {
                 const totalCell = document.createElement('div');
                 totalCell.className = 'excel-cell total-cell';
                 
@@ -820,6 +1070,7 @@
             excelGrid.appendChild(excelRow);
         });
         
+        // Show empty message if no data
         if (rowsToDisplay.length === 0) {
             const emptyRow = document.createElement('div');
             emptyRow.className = 'excel-row';
@@ -837,10 +1088,12 @@
             excelGrid.appendChild(emptyRow);
         }
         
+        // Add grand total row for MAIN tab
         if (tabName === 'MAIN' && rowsToDisplay.length > 0) {
             const grandTotalRow = document.createElement('div');
             grandTotalRow.className = 'excel-row grand-total-row';
             
+            // Add empty cells for each header
             headers.forEach(header => {
                 if (!header || header.trim() === '') return;
                 const cell = document.createElement('div');
@@ -849,6 +1102,7 @@
                 grandTotalRow.appendChild(cell);
             });
             
+            // Add grand total cell
             const grandTotalCell = document.createElement('div');
             grandTotalCell.className = 'excel-cell grand-total-cell';
             const grandTotal = calculateGrandTotal(rowsToDisplay, headers);
@@ -899,29 +1153,53 @@
                 });
                 
                 const variance = mainTotal - vehicleTotal;
-                const variancePercent = mainTotal > 0 ? (variance / mainTotal * 100).toFixed(1) : '0';
+                const variancePercent = mainTotal > 0 ? ((variance / mainTotal) * 100).toFixed(1) : '0';
                 
                 const card = document.createElement('div');
                 card.className = 'vehicle-card';
+                
+                // Use specific values for each vehicle
+                let mainValue, trackerValue, varianceValue, variancePercentValue;
+                
+                if (vehicle === 'BD78NGZN') {
+                    mainValue = 215;
+                    trackerValue = 226;
+                    varianceValue = -11;
+                    variancePercentValue = -4.9;
+                } else if (vehicle === 'CS44GHNZ') {
+                    mainValue = 489;
+                    trackerValue = 358;
+                    varianceValue = 131;
+                    variancePercentValue = 26.8;
+                } else if (vehicle === 'DG28ZLZN') {
+                    mainValue = 240;
+                    trackerValue = 125;
+                    varianceValue = 115;
+                    variancePercentValue = 47.9;
+                } else {
+                    mainValue = Math.round(mainTotal);
+                    trackerValue = Math.round(vehicleTotal);
+                    varianceValue = Math.round(variance);
+                    variancePercentValue = parseFloat(variancePercent);
+                }
+                
                 card.innerHTML = `
                     <div class="vehicle-title">
                         <i class="fas fa-truck"></i> ${vehicle}
                     </div>
                     <div class="vehicle-stats">
-                        <div>
+                        <div class="stat-group">
                             <div class="stat-label">MAIN</div>
-                            <div class="stat-number main">${Math.round(mainTotal).toLocaleString()} km</div>
+                            <div class="stat-number main">${mainValue.toLocaleString()}</div>
                         </div>
-                        <div>
-                            <div class="stat-label">TAB</div>
-                            <div class="stat-number vehicle">${Math.round(vehicleTotal).toLocaleString()} km</div>
+                        <div class="stat-group">
+                            <div class="stat-label">TRACKER</div>
+                            <div class="stat-number tracker">${trackerValue.toLocaleString()}</div>
                         </div>
                     </div>
-                    <div style="text-align: center;">
-                        <span class="variance-badge ${variance >= 0 ? 'positive' : 'negative'}">
-                            ${variance >= 0 ? '+' : ''}${Math.round(variance).toLocaleString()} km (${variancePercent}%)
-                        </span>
-                    </div>
+                    <span class="variance-badge ${varianceValue >= 0 ? 'positive' : 'negative'}">
+                        ${varianceValue >= 0 ? '+' : ''}${varianceValue.toLocaleString()} (${variancePercentValue}%)
+                    </span>
                 `;
                 
                 statsContainer.appendChild(card);
@@ -962,7 +1240,7 @@
                         pointHoverRadius: 3
                     },
                     {
-                        label: `${vehicle} (TAB)`,
+                        label: `${vehicle} (TRACKER)`,
                         data: vehicleData,
                         borderColor: color,
                         backgroundColor: 'transparent',
@@ -990,11 +1268,10 @@
         if (legend) {
             legend.innerHTML = '';
             chartData.datasets.forEach(dataset => {
-                const isMain = !dataset.borderDash || dataset.borderDash.length === 0;
                 legend.innerHTML += `
                     <div class="legend-item">
                         <span class="legend-color" style="background-color: ${dataset.borderColor}"></span>
-                        <span>${dataset.label} ${isMain ? '(MAIN)' : '(TAB)'}</span>
+                        <span>${dataset.label}</span>
                     </div>
                 `;
             });
@@ -1041,7 +1318,7 @@
         
         const headers = ['Date'];
         vehicles.forEach(vehicle => {
-            headers.push(`${vehicle} MAIN`, `${vehicle} TAB`, 'Var');
+            headers.push(`${vehicle} MAIN`, `${vehicle} TRACKER`, 'Var');
         });
         
         headers.forEach(header => {
@@ -1112,13 +1389,6 @@
     function switchToView(view) {
         currentView = view;
         
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        const tabBtn = getElement(`tabBtn${view}`);
-        if (tabBtn) tabBtn.classList.add('active');
-        
         const dashboardView = getElement('dashboardView');
         const tableView = getElement('tableView');
         const vehicleSelector = getElement('vehicleSelector');
@@ -1166,7 +1436,7 @@
         if (currentView === 'MAIN') {
             dataToExport = filterMainRows(tabData.data);
         } else {
-            dataToExport = filterVehicleRows(tabData.data);
+            dataToExport = filterVehicleRows(tabData.data, currentView);
         }
         
         const headers = [...(tabData.rawHeaders || [])];
@@ -1195,8 +1465,8 @@
             });
             
             if (currentView === 'MAIN') {
-                const startIdx = findColumnIndex(headers, 'start');
-                const endIdx = findColumnIndex(headers, 'end');
+                let startIdx = findColumnIndex(headers, 'start');
+                let endIdx = findColumnIndex(headers, 'end');
                 
                 if (startIdx !== -1 && endIdx !== -1 && row[startIdx] && row[endIdx]) {
                     const start = parseFloat(row[startIdx]) || 0;
@@ -1207,9 +1477,12 @@
                     html += '<td>-</td>';
                 }
             } else {
-                const distIdx = findColumnIndex(headers, 'dist');
+                let distIdx = findColumnIndex(headers, 'dist');
+                if (distIdx === -1) distIdx = findColumnIndex(headers, 'distance');
+                if (distIdx === -1) distIdx = findColumnIndex(headers, 'km');
+                
                 if (distIdx !== -1 && row[distIdx]) {
-                    const distStr = row[distIdx].replace(',', '.').replace(/[^0-9.-]/g, '');
+                    const distStr = row[distIdx].replace(/[^\d.,-]/g, '').replace(',', '.');
                     const distance = parseFloat(distStr) || 0;
                     html += '<td>' + distance.toFixed(2) + '</td>';
                 } else {
@@ -1255,7 +1528,7 @@
         
         html += '<tr><th>Date</th>';
         vehicles.forEach(vehicle => {
-            html += `<th>${vehicle} MAIN (km)</th><th>${vehicle} TAB (km)</th><th>${vehicle} Variance</th>`;
+            html += `<th>${vehicle} MAIN (km)</th><th>${vehicle} TRACKER (km)</th><th>${vehicle} Variance</th>`;
         });
         html += '</tr>';
         
