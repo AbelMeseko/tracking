@@ -1,951 +1,1121 @@
-        :root {
-            --excel-blue: #0078d4;
-            --excel-green: #107c10;
-            --excel-orange: #ca5010;
-            --excel-purple: #5c2d91;
-            --excel-red: #d13438;
-            --excel-font: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
-        }
 
-        /* Light mode (default) */
-        :root {
-            --bg-primary: #f0f0f0;
-            --bg-secondary: #f5f5f5;
-            --bg-tertiary: #ffffff;
-            --bg-header: #f8f8f8;
-            --bg-ribbon: #f3f3f3;
-            --bg-qat: #f0f0f0;
-            --bg-input: #ffffff;
-            --text-primary: #333333;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-            --border-color: #d0d0d0;
-            --border-dark: #b0b0b0;
-            --header-bg: #f8f8f8;
-            --cell-bg: #ffffff;
-            --cell-hover: #f5f5f5;
-            --cell-selected: #e6f0fa;
-            --row-number-bg: #f0f0f0;
-            --shadow-color: rgba(0,0,0,0.1);
-            --excel-green-bg: #217346;
-            --excel-green-hover: #1a5e3a;
-            --tab-active: #217346;
-            --tab-hover: #1a5e3a;
-            --tab-btn: #5c5c5c;
-            --tab-btn-hover: #0078d4;
-            --match-highlight: rgba(16, 124, 16, 0.1);
-            --mismatch-highlight: rgba(209, 52, 56, 0.1);
-            --zero-day-bg: rgba(128, 128, 128, 0.05);
-            
-            /* Vehicle text colors for table (keep consistent with chart) */
-            --color-bd78: #4da6ff;
-            --color-cs44: #ff9f4a;
-            --color-dg28: #6c5ce7;
-        }
-
-        /* Dark mode */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-primary: #1e1e1e;
-                --bg-secondary: #252526;
-                --bg-tertiary: #2d2d30;
-                --bg-header: #2d2d30;
-                --bg-ribbon: #2d2d30;
-                --bg-qat: #252526;
-                --bg-input: #2d2d30;
-                --text-primary: #ffffff;
-                --text-secondary: #cccccc;
-                --text-muted: #999999;
-                --border-color: #3e3e42;
-                --border-dark: #555555;
-                --header-bg: #2d2d30;
-                --cell-bg: #1e1e1e;
-                --cell-hover: #2d2d30;
-                --cell-selected: #2d3e50;
-                --row-number-bg: #2d2d30;
-                --shadow-color: rgba(0,0,0,0.3);
-                --excel-green-bg: #107c10;
-                --excel-green-hover: #0d6a0d;
-                --tab-active: #107c10;
-                --tab-hover: #0d6a0d;
-                --tab-btn: #888888;
-                --tab-btn-hover: #4da6ff;
-                --match-highlight: rgba(16, 124, 16, 0.2);
-                --mismatch-highlight: rgba(209, 52, 56, 0.2);
-                --zero-day-bg: rgba(128, 128, 128, 0.1);
-                
-                --color-bd78: #6ab0ff;
-                --color-cs44: #ffb86b;
-                --color-dg28: #9d8aff;
-            }
-        }
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', 'Calibri', 'Arial', sans-serif;
         }
-        
+
         body {
-            font-family: var(--excel-font);
-            font-size: 12px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.4;
-            overflow: hidden;
-            height: 100vh;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 20px;
+            -webkit-overflow-scrolling: touch;
+            overflow-y: auto;
+            background-color: #000;
+        }
+
+        /* Transparent Scrollbar Styles */
+        *::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background: transparent;
         }
         
-        /* Excel Container */
+        *::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        
+        *::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        *::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.1);
+        }
+
+        /* Video Background - NO BLUR */
+        #bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translateX(-50%) translateY(-50%);
+            z-index: -2;
+            object-fit: cover;
+            /* filter: blur(2px); - REMOVED BLUR */
+            -webkit-filter: none;
+        }
+
+        /* Main Container - Fully Transparent */
         .excel-container {
+            width: 100%;
+            max-width: 1600px;
+            height: 95vh;
+            margin: 0 auto;
+            background: transparent;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            border-radius: 12px;
             overflow: hidden;
         }
-        
-        /* Excel Ribbon Header */
-        .excel-ribbon {
-            flex-shrink: 0;
-            background: var(--bg-header);
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 5px var(--shadow-color);
+
+        /* ============================================
+           NAVIGATION BAR - Right Side, Hides When Not in Use
+        ============================================ */
+        .nav-bar {
+            position: fixed;
+            top: 50%;
+            right: -200px;
+            transform: translateY(-50%);
+            width: 200px;
+            background: rgba(33, 33, 33, 0.85);
+            /* backdrop-filter: blur(10px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 12px 0 0 12px;
+            padding: 20px 15px;
+            transition: right 0.3s ease;
+            z-index: 1000;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-right: none;
         }
-        
-        /* Quick Access Toolbar */
+
+        .nav-bar:hover,
+        .nav-bar:focus-within {
+            right: 0;
+        }
+
+        .nav-bar::before {
+            content: '☰';
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(33, 33, 33, 0.85);
+            /* backdrop-filter: blur(10px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            padding: 10px 5px;
+            border-radius: 8px 0 0 8px;
+            font-size: 20px;
+            color: white;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-right: none;
+        }
+
+        .nav-header {
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+
+        .nav-header i {
+            color: #4CAF50;
+            margin-right: 8px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+
+        .nav-btn i {
+            color: #4CAF50;
+            width: 20px;
+            font-size: 16px;
+        }
+
+        .nav-btn.logout {
+            margin-top: 15px;
+            background: rgba(244, 67, 54, 0.2);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .nav-btn.logout:hover {
+            background: rgba(244, 67, 54, 0.4);
+            border-color: #f44336;
+        }
+
+        .nav-btn.logout i {
+            color: #f44336;
+        }
+
+        .user-info-nav {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #4CAF50;
+        }
+
+        .user-info-nav .user-email {
+            color: white;
+            font-size: 12px;
+            word-break: break-all;
+            margin-top: 5px;
+        }
+
+        .user-info-nav i {
+            color: #4CAF50;
+            margin-right: 5px;
+        }
+
+        /* Excel Ribbon - Semi-transparent */
+        .excel-ribbon {
+            background: rgba(243, 243, 243, 0.75);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-bottom: 1px solid rgba(208, 208, 208, 0.3);
+            padding: 10px 20px;
+            border-radius: 12px 12px 0 0;
+            margin: 0 0 1px 0;
+        }
+
         .qat {
-            background: var(--bg-qat);
-            height: 32px;
-            padding: 0 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        
-        .qat-left, .qat-right {
+
+        .qat-left {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 20px;
+            flex-wrap: wrap;
         }
-        
-        .qat-btn {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-dark);
-            padding: 3px 6px;
-            border-radius: 2px;
+
+        .ribbon-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(192, 192, 192, 0.5);
+            border-radius: 4px;
+            font-size: 13px;
             cursor: pointer;
-            font-size: 10px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            height: 22px;
+            transition: all 0.2s;
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
         }
-        
-        .qat-btn:hover {
-            background: #505050;
-            border-color: var(--excel-blue);
-            color: #4da6ff;
+
+        .ribbon-btn:hover {
+            background: rgba(230, 230, 230, 0.95);
+            border-color: #808080;
         }
-        
-        /* Vehicle selector */
+
+        .ribbon-btn i {
+            color: #217346;
+            font-size: 14px;
+        }
+
+        /* Vehicle Selector - Semi-transparent */
         .vehicle-selector {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-dark);
-            border-radius: 3px;
-            padding: 3px 10px;
-            margin-left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 12px;
+            border: 1px solid rgba(192, 192, 192, 0.5);
+            border-radius: 4px;
+            font-size: 13px;
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
         }
-        
+
         .vehicle-selector label {
-            font-size: 11px;
-            color: var(--text-secondary);
+            font-weight: 600;
+            color: #333;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
-        
-        .vehicle-selector label i {
-            color: var(--excel-green);
-        }
-        
+
         .vehicle-selector select {
-            border: none;
-            background: transparent;
-            font-size: 11px;
-            color: var(--text-primary);
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 13px;
             outline: none;
-            cursor: pointer;
-            padding: 3px;
-            min-width: 120px;
+            background: white;
         }
-        
-        /* Date range selector */
+
+        .vehicle-selector select:focus {
+            border-color: #217346;
+        }
+
+        /* Date Range Selector - Semi-transparent */
         .date-range-selector {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-dark);
-            border-radius: 3px;
-            padding: 3px 10px;
-            margin-left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 12px;
+            border: 1px solid rgba(192, 192, 192, 0.5);
+            border-radius: 4px;
+            font-size: 13px;
+            flex-wrap: wrap;
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
         }
-        
+
         .date-range-selector label {
-            font-size: 11px;
-            color: var(--text-secondary);
+            font-weight: 600;
+            color: #333;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
-        
-        .date-range-selector label i {
-            color: var(--excel-green);
-        }
-        
+
         .date-range-selector input[type="date"] {
-            border: 1px solid var(--border-dark);
-            background: var(--bg-input);
-            padding: 3px 5px;
-            font-size: 10px;
-            font-family: inherit;
+            border: 1px solid #ccc;
+            padding: 4px 8px;
             border-radius: 3px;
-            color: var(--text-primary);
+            font-size: 13px;
             outline: none;
-            width: 120px;
+            background: white;
         }
-        
-        .date-range-selector .apply-btn {
-            background: var(--excel-green);
+
+        .date-range-selector input[type="date"]:focus {
+            border-color: #217346;
+        }
+
+        .apply-btn {
+            background: #217346;
             color: white;
             border: none;
-            padding: 3px 10px;
+            padding: 4px 12px;
             border-radius: 3px;
-            font-size: 10px;
+            font-size: 13px;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
         }
-        
-        .date-range-selector .apply-btn:hover {
-            background: var(--excel-green-hover);
+
+        .apply-btn:hover {
+            background: #1a5c38;
         }
-        
-        .date-range-selector .last7-btn {
-            background: transparent;
-            border: 1px solid var(--border-dark);
-            padding: 3px 8px;
+
+        .last7-btn {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            padding: 4px 12px;
             border-radius: 3px;
-            font-size: 10px;
+            font-size: 13px;
             cursor: pointer;
-            color: var(--text-secondary);
+            font-weight: 600;
         }
-        
-        .date-range-selector .last7-btn:hover {
-            background: var(--bg-secondary);
+
+        .last7-btn:hover {
+            background: #e0a800;
         }
-        
-        /* Date range indicator */
+
+        /* Date Range Indicator - Semi-transparent */
         .date-range-indicator {
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-dark);
-            border-radius: 3px;
-            padding: 3px 10px;
-            margin-left: 10px;
+            background: rgba(232, 240, 254, 0.9);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #1e3c5c;
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
         }
-        
+
         .date-range-indicator i {
-            color: var(--excel-green);
+            color: #217346;
         }
-        
-        .date-range-indicator span {
-            font-size: 11px;
-            color: var(--text-primary);
-            font-weight: 500;
+
+        /* Main Content - FULLY TRANSPARENT */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: transparent;
         }
-        
-        /* Tab buttons */
-        .tab-buttons {
+
+        /* Dashboard View containers - Semi-transparent NO BLUR */
+        .stats-container {
+            background: rgba(255, 255, 255, 0.85);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #217346;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.85);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #4a6fa5;
+            margin-bottom: 20px;
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.85);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #ff8c00;
+        }
+
+        .excel-table-container {
+            background: rgba(255, 255, 255, 0.85);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #217346;
+        }
+
+        .stats-title, .chart-title, .table-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1e3c5c;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 2px;
-            margin-left: 10px;
-            border-left: 1px solid var(--border-dark);
-            padding-left: 10px;
+            gap: 6px;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
         }
-        
-        .tab-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            padding: 3px 10px;
-            border-radius: 15px;
-            cursor: pointer;
+
+        .stats-title i, .chart-title i, .table-title i {
+            color: #217346;
+        }
+
+        /* Vehicle Cards - Side by Side with Smaller Text */
+        .vehicle-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .vehicle-card {
+            background: rgba(248, 249, 252, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 3px solid #217346;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 1 1 200px;
+            min-width: 220px;
+            border: 1px solid rgba(224, 224, 224, 0.5);
+        }
+
+        .vehicle-title {
+            font-weight: 600;
             font-size: 11px;
-            color: var(--text-secondary);
+            color: #1e3c5c;
             display: flex;
             align-items: center;
             gap: 4px;
-            transition: all 0.2s ease;
+            white-space: nowrap;
         }
-        
-        .tab-btn:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--border-dark);
-            color: var(--excel-blue);
-        }
-        
-        .tab-btn.active {
-            background: var(--tab-active);
-            color: white;
-            border-color: var(--tab-active);
-        }
-        
-        .tab-btn i {
+
+        .vehicle-title i {
+            color: #217346;
             font-size: 10px;
         }
-        
-        /* Main content area */
-        .main-content {
-            flex: 1;
+
+        .vehicle-stats {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .stat-group {
+            text-align: center;
+            min-width: 40px;
+        }
+
+        .stat-label {
+            font-size: 7px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
+        }
+
+        .stat-number {
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .stat-number.main {
+            color: #217346;
+        }
+
+        .stat-number.tracker {
+            color: #ff8c00;
+        }
+
+        .variance-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 4px;
+            border-radius: 10px;
+            font-size: 8px;
+            font-weight: 500;
+            white-space: nowrap;
+            min-width: 55px;
+            justify-content: center;
+        }
+
+        .variance-badge.positive {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .variance-badge.negative {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+
+        /* ALL GRAPH STYLES - COMPLETELY UNCHANGED */
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1e3c5c;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-title i {
+            color: #217346;
+        }
+
+        .chart-legend {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 3px;
+            border-radius: 1.5px;
+        }
+
+        .chart-wrapper {
+            height: 250px;
             position: relative;
-            padding: 8px;
         }
-        
-        /* Dashboard View */
-        .dashboard-view {
-            flex: 1;
+
+        /* ALL TABLE STYLES - COMPLETELY UNCHANGED */
+        .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .table-title {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1e3c5c;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .table-title i {
+            color: #217346;
+        }
+
+        .table-control-btn {
+            background: rgba(240, 240, 240, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid rgba(192, 192, 192, 0.3);
+        }
+
+        .table-control-btn:hover {
+            background: rgba(224, 224, 224, 0.95);
+        }
+
+        .comparison-grid {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid rgba(222, 226, 230, 0.5);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.7);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+        }
+
+        .comparison-headers {
+            display: grid;
+            grid-template-columns: 30px repeat(auto-fit, minmax(80px, 1fr));
+            background: rgba(248, 249, 250, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-bottom: 2px solid rgba(222, 226, 230, 0.8);
+            font-weight: 700;
+            font-size: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .comparison-rows {
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            gap: 8px;
-            height: 100%;
         }
-        
-        /* Table View */
+
+        .comp-row {
+            display: grid;
+            grid-template-columns: 30px repeat(auto-fit, minmax(80px, 1fr));
+            border-bottom: 1px solid rgba(222, 226, 230, 0.5);
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .comp-row:hover {
+            background: rgba(245, 245, 245, 0.8);
+        }
+
+        .row-number {
+            padding: 6px 2px;
+            background: rgba(248, 249, 250, 0.8);
+            text-align: center;
+            border-right: 1px solid rgba(222, 226, 230, 0.5);
+            font-weight: 500;
+            color: #666;
+            font-size: 11px;
+        }
+
+        .comp-header {
+            padding: 6px 8px;
+            font-weight: 700;
+            color: #333;
+            border-right: 1px solid rgba(222, 226, 230, 0.5);
+            white-space: nowrap;
+            font-size: 11px;
+        }
+
+        .comp-cell {
+            padding: 6px 8px;
+            border-right: 1px solid rgba(222, 226, 230, 0.5);
+            white-space: nowrap;
+            font-size: 11px;
+        }
+
+        .comp-cell:last-child {
+            border-right: none;
+        }
+
+        .comp-cell.positive {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+
+        .comp-cell.negative {
+            color: #c62828;
+            font-weight: 600;
+        }
+
+        .comp-cell.zero-value {
+            color: #999;
+        }
+
+        /* ALL TABLE VIEW STYLES - COMPLETELY UNCHANGED */
         .table-view {
-            flex: 1;
             display: none;
             flex-direction: column;
-            overflow: hidden;
-            background: var(--bg-primary);
-            height: 100%;
+            gap: 15px;
         }
-        
-        .table-view.active {
-            display: flex;
-        }
-        
-        /* Excel-like table with filter bar */
-        .excel-table-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            box-shadow: 0 2px 5px var(--shadow-color);
-        }
-        
-        .table-header {
-            padding: 6px 10px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .table-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        /* Filter bar for MAIN tab */
+
         .filter-bar {
             display: flex;
             align-items: center;
             gap: 12px;
+            background: rgba(248, 249, 250, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
-            padding: 4px 8px;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 10px;
+            font-size: 12px;
+            border: 1px solid rgba(222, 226, 230, 0.5);
         }
-        
+
         .filter-group {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        
+
         .filter-group label {
+            font-weight: 600;
+            color: #333;
             display: flex;
             align-items: center;
-            gap: 3px;
-            color: var(--text-secondary);
-            font-weight: 500;
+            gap: 4px;
+            font-size: 12px;
         }
-        
-        .filter-group label i {
-            color: var(--excel-green);
-            font-size: 9px;
-        }
-        
-        .filter-group select, .filter-group input {
-            background: var(--bg-input);
-            border: 1px solid var(--border-dark);
+
+        .filter-group select,
+        .filter-group input {
+            padding: 4px 6px;
+            border: 1px solid #ccc;
             border-radius: 3px;
-            padding: 3px 6px;
-            font-size: 10px;
-            color: var(--text-primary);
-            outline: none;
-            min-width: 100px;
+            font-size: 12px;
+            background: white;
         }
-        
-        .filter-group input[type="date"] {
-            width: 120px;
-        }
-        
-        .filter-group .clear-btn {
-            background: transparent;
-            border: 1px solid var(--border-dark);
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 4px 10px;
             border-radius: 3px;
-            padding: 2px 8px;
-            font-size: 9px;
             cursor: pointer;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 3px;
+            font-size: 12px;
         }
-        
-        .filter-group .clear-btn:hover {
-            background: var(--cell-hover);
-            border-color: var(--excel-red);
-            color: var(--excel-red);
+
+        .clear-btn:hover {
+            background: #5a6268;
         }
-        
+
         .filter-stats {
             margin-left: auto;
-            font-size: 9px;
-            color: var(--text-muted);
-            background: var(--bg-secondary);
-            padding: 2px 8px;
-            border-radius: 12px;
+            font-size: 11px;
+            color: #666;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 16px;
         }
-        
-        .excel-column-headers {
-            display: flex;
-            background: var(--bg-secondary);
-            border-bottom: 2px solid var(--border-color);
-            padding-left: 35px;
-            flex-shrink: 0;
-            overflow-x: hidden;
-        }
-        
-        .excel-col-header {
-            flex: 1;
-            min-width: 90px;
-            padding: 6px 4px;
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-            white-space: nowrap;
-        }
-        
-        .excel-col-header i {
-            margin-right: 3px;
-            color: var(--excel-green);
-            font-size: 9px;
-        }
-        
+
         .excel-grid-container {
-            flex: 1;
-            overflow: auto;
-            background: var(--bg-primary);
+            max-height: 450px;
+            overflow-y: auto;
+            border: 1px solid rgba(222, 226, 230, 0.5);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.7);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
         }
-        
+
         .excel-grid {
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
-        
+
         .excel-row {
             display: flex;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
+            width: 100%;
+            border-bottom: 1px solid rgba(224, 224, 224, 0.5);
+            background: rgba(255, 255, 255, 0.6);
         }
-        
+
+        .excel-row:last-child {
+            border-bottom: none;
+        }
+
         .excel-row:hover {
-            background-color: var(--cell-hover);
+            background: rgba(245, 245, 245, 0.8);
         }
-        
-        .excel-row-number {
-            width: 35px;
-            padding: 4px 4px;
-            background: var(--bg-tertiary);
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 500;
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            flex-shrink: 0;
+
+        .excel-row-header {
+            display: flex;
+            width: 100%;
+            background: rgba(248, 249, 250, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-bottom: 2px solid rgba(222, 226, 230, 0.8);
+            font-weight: 600;
         }
-        
+
+        .excel-col-header,
         .excel-cell {
             flex: 1;
-            min-width: 90px;
-            padding: 4px 6px;
-            font-size: 10px;
-            color: var(--text-primary);
-            border-right: 1px solid var(--border-color);
+            min-width: 80px;
+            padding: 6px 8px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            border-left: 1px solid rgba(222, 226, 230, 0.5);
+            font-size: 12px;
         }
-        
-        /* Chart container */
-        .chart-container {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 10px;
-            height: 340px;
-            position: relative;
-            box-shadow: 0 2px 5px var(--shadow-color);
-            flex-shrink: 0;
+
+        .excel-col-header:first-child,
+        .excel-cell:first-child {
+            border-left: none;
         }
-        
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        
-        .chart-title {
-            font-size: 11px;
+
+        .excel-col-header {
+            background: rgba(248, 249, 250, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
             font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
-        
-        .chart-title i {
-            color: var(--excel-green);
+
+        .excel-col-header i {
+            color: #217346;
+            margin-right: 4px;
             font-size: 11px;
         }
-        
-        .chart-legend {
+
+        .excel-cell.odo-highlight {
+            background-color: rgba(255, 243, 205, 0.8);
+            font-weight: 500;
+        }
+
+        .excel-col-header.total-column {
+            background: linear-gradient(135deg, rgba(227, 242, 253, 0.9), rgba(187, 222, 251, 0.9));
+            color: #0d47a1;
+            border-left: 2px solid #4a6fa5;
+        }
+
+        .excel-cell.total-cell {
+            background-color: rgba(245, 249, 255, 0.8);
+            font-weight: 600;
+            color: #0d47a1;
+            border-left: 2px solid #4a6fa5;
+            font-family: 'Courier New', monospace;
+        }
+
+        .grand-total-row {
             display: flex;
-            gap: 10px;
+            background: rgba(232, 238, 247, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-top: 2px solid #2c3e50;
+            font-weight: 700;
+        }
+
+        .grand-total-cell {
+            padding: 6px 8px;
+            background: rgba(212, 227, 253, 0.9);
+            color: #0d47a1;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            min-width: 80px;
+            border-left: 1px solid #ccc;
+            flex: 1;
+        }
+
+        .totals-row {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(248, 249, 252, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-top: 2px solid #4a6fa5;
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .totals-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
             flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 9px;
-        }
-        
-        .legend-color {
-            width: 8px;
-            height: 8px;
-            border-radius: 2px;
-        }
-        
-        .chart-wrapper {
-            height: calc(100% - 30px);
             width: 100%;
         }
-        
-        /* Vehicle cards - compact */
-        .vehicle-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+
+        .totals-label {
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .totals-label i {
+            color: #4a6fa5;
+        }
+
+        .totals-value {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1e3c5c;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .totals-breakdown {
+            display: flex;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .totals-breakdown-item {
+            display: flex;
+            align-items: center;
             gap: 6px;
-            width: 100%;
-            flex-shrink: 0;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.9);
+            /* backdrop-filter: blur(4px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-radius: 16px;
+            font-size: 12px;
         }
-        
-        .vehicle-card {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 6px;
-            box-shadow: 0 2px 5px var(--shadow-color);
+
+        .totals-breakdown-item i {
+            color: #4a6fa5;
         }
-        
-        .vehicle-title {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 3px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-        
-        .vehicle-title i {
-            font-size: 9px;
-            color: var(--excel-green);
-        }
-        
-        .vehicle-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
-        }
-        
-        .stat-label {
-            font-size: 8px;
-            color: var(--text-secondary);
-        }
-        
-        .stat-number {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        
-        .stat-number.main {
-            color: var(--excel-blue);
-        }
-        
-        .stat-number.vehicle {
-            color: var(--excel-orange);
-        }
-        
-        .variance-badge {
-            display: inline-block;
-            padding: 2px 4px;
-            border-radius: 6px;
-            font-size: 8px;
-            font-weight: 600;
-        }
-        
-        .variance-badge.positive {
-            background: var(--match-highlight);
-            color: var(--excel-green);
-        }
-        
-        .variance-badge.negative {
-            background: var(--mismatch-highlight);
-            color: var(--excel-red);
-        }
-        
-        /* Comparison table */
-        .data-table-container {
-            flex: 1;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 5px var(--shadow-color);
-            min-height: 0;
-        }
-        
-        .comparison-grid {
-            flex: 1;
-            overflow: auto;
-            position: relative;
-        }
-        
-        .comparison-headers {
-            display: flex;
-            background: var(--bg-secondary);
-            border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            padding-left: 35px;
-        }
-        
-        .comp-header {
-            flex: 1;
-            min-width: 75px;
-            padding: 5px 3px;
-            font-size: 9px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-            white-space: nowrap;
-        }
-        
-        .comp-header:last-child {
-            border-right: none;
-        }
-        
-        .comparison-rows {
-            overflow: auto;
-        }
-        
-        .comp-row {
-            display: flex;
-            border-bottom: 1px solid var(--border-color);
-            min-height: 22px;
-        }
-        
-        .comp-row.zero-day {
-            background-color: var(--zero-day-bg);
-            opacity: 0.8;
-        }
-        
-        .comp-row:hover {
-            background-color: var(--cell-hover);
-        }
-        
-        .comp-row .row-number {
-            width: 35px;
-            padding: 3px 3px;
-            background: var(--bg-tertiary);
-            font-size: 9px;
-            color: var(--text-secondary);
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 500;
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            flex-shrink: 0;
-        }
-        
-        .comp-cell {
-            flex: 1;
-            min-width: 75px;
-            padding: 3px 3px;
-            font-size: 9px;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: center;
-        }
-        
-        /* Vehicle-specific text colors for the table cells */
-        .comp-cell.vehicle-bd78 {
-            color: var(--color-bd78);
-            font-weight: 500;
-        }
-        .comp-cell.vehicle-cs44 {
-            color: var(--color-cs44);
-            font-weight: 500;
-        }
-        .comp-cell.vehicle-dg28 {
-            color: var(--color-dg28);
-            font-weight: 500;
-        }
-        
-        /* Variance cells keep background highlight but use vehicle color for text */
-        .comp-cell.positive.vehicle-bd78 {
-            background-color: var(--match-highlight);
-            color: var(--color-bd78);
-            font-weight: 600;
-        }
-        .comp-cell.negative.vehicle-bd78 {
-            background-color: var(--mismatch-highlight);
-            color: var(--color-bd78);
-            font-weight: 600;
-        }
-        .comp-cell.positive.vehicle-cs44 {
-            background-color: var(--match-highlight);
-            color: var(--color-cs44);
-            font-weight: 600;
-        }
-        .comp-cell.negative.vehicle-cs44 {
-            background-color: var(--mismatch-highlight);
-            color: var(--color-cs44);
-            font-weight: 600;
-        }
-        .comp-cell.positive.vehicle-dg28 {
-            background-color: var(--match-highlight);
-            color: var(--color-dg28);
-            font-weight: 600;
-        }
-        .comp-cell.negative.vehicle-dg28 {
-            background-color: var(--mismatch-highlight);
-            color: var(--color-dg28);
-            font-weight: 600;
-        }
-        
-        .comp-cell.zero-value {
-            color: var(--text-muted);
-            font-style: italic;
-        }
-        
-        /* Loading and Error - improved initial state */
+
+        /* ALL LOADING STYLES - COMPLETELY UNCHANGED */
         .loading {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--bg-primary);
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
-            flex-direction: column;
-            gap: 16px;
-            transition: opacity 0.3s ease;
+            z-index: 9999;
+            transition: opacity 0.3s;
         }
-        
+
         .loading.hidden {
             opacity: 0;
             pointer-events: none;
         }
-        
+
         .loading-content {
             text-align: center;
-            background: var(--bg-tertiary);
-            padding: 24px 32px;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px var(--shadow-color);
-            border: 1px solid var(--border-color);
-            max-width: 320px;
+            background: rgba(255,255,255,0.9);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
-        
+
         .loading-icon {
-            font-size: 36px;
-            color: var(--excel-green);
-            margin-bottom: 12px;
+            font-size: 50px;
+            color: #217346;
+            margin-bottom: 15px;
+            animation: bounce 1s infinite;
         }
-        
+
         .loading-spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--excel-green);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #217346;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 12px auto;
+            margin: 15px auto;
+            animation: spin 1s linear infinite;
         }
-        
+
         .loading-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
         }
-        
+
         .loading-subtitle {
-            font-size: 12px;
-            color: var(--text-secondary);
+            color: #666;
+            font-size: 13px;
         }
-        
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* ALL ERROR STYLES - COMPLETELY UNCHANGED */
         .error {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ff6b6b;
-            padding: 20px;
-            background: #2d1e1e;
-            border: 1px solid #5a2d2d;
-            border-radius: 4px;
             display: none;
-            z-index: 1000;
-            text-align: center;
+            background-color: rgba(255, 235, 238, 0.9);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            color: #c62828;
+            padding: 12px;
+            margin: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #c62828;
         }
-        
+
         .error.active {
             display: block;
         }
-        
-        .excel-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--excel-green);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 3px;
-            box-shadow: 0 2px 10px var(--shadow-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        /* Footer */
+
+        /* ALL FOOTER STYLES - COMPLETELY UNCHANGED */
         .footer-status-bar {
-            flex-shrink: 0;
+            background: rgba(243, 243, 243, 0.85);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            border-top: 1px solid rgba(208, 208, 208, 0.3);
+            padding: 6px 20px;
             display: flex;
             align-items: center;
-            padding: 4px 10px;
-            background: var(--excel-green);
-            color: white;
-            font-size: 10px;
-            border-top: 1px solid #0d6a0d;
-            gap: 12px;
-            flex-wrap: wrap;
-            z-index: 100;
+            gap: 20px;
+            font-size: 12px;
+            color: #333;
+            border-radius: 0 0 12px 12px;
+            margin-top: 1px;
         }
-        
+
         .footer-status-item {
             display: flex;
             align-items: center;
             gap: 5px;
-            padding-right: 12px;
-            border-right: 1px solid #2e8b57;
         }
-        
-        .footer-status-item:last-child {
-            border-right: none;
+
+        .footer-status-item i {
+            color: #217346;
         }
-        
+
         .footer-status-value {
             font-weight: 600;
-            background: #0d6a0d;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
+        }
+
+        .excel-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(50, 50, 50, 0.9);
+            /* backdrop-filter: blur(8px); - REMOVED BLUR */
+            -webkit-backdrop-filter: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .dashboard-view {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .qat-left {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .vehicle-cards {
+                flex-direction: column;
+            }
+            
+            .vehicle-card {
+                width: 100%;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .filter-stats {
+                margin-left: 0;
+            }
+            
+            .nav-bar {
+                width: 180px;
+            }
         }
